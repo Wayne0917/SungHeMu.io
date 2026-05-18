@@ -1,0 +1,195 @@
+:root {
+    --primary-color: #2b3a4a;
+    --accent-color: #3b82f6;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --bg-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --text-color: #1f2937;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-user-select: none; /* 防止觸控螢幕誤選取文字 */
+    user-select: none;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 600px;
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: var(--primary-color);
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+/* 頁籤切換按鈕 */
+.tab-container {
+    display: flex;
+    gap: 12px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    background-color: #e5e7eb;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background-color: var(--accent-color);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* 點檢清單區域 */
+.checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 250px;
+}
+
+/* 點檢項目樣式 (超大觸控區) */
+.check-item {
+    display: flex;
+    align-items: center;
+    background-color: #f9fafb;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.check-item:active {
+    transform: scale(0.98);
+}
+
+.check-item.checked {
+    border-color: var(--success-color);
+    background-color: #f0fdf4;
+}
+
+.check-item input[type="checkbox"] {
+    width: 28px;
+    height: 28px;
+    margin-right: 16px;
+    cursor: pointer;
+    accent-color: var(--success-color);
+}
+
+.check-item span {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.check-item.checked span {
+    color: #166534;
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+/* 底部控制面板 */
+.control-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+/* 狀態提示條 */
+.status-bar {
+    text-align: center;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 16px;
+    background-color: #f3f4f6;
+    color: #9ca3af;
+}
+
+.status-bar.complete {
+    background-color: var(--success-color);
+    color: white;
+    animation: pulse 1.5s infinite;
+}
+
+.btn-group {
+    display: flex;
+    gap: 12px;
+}
+
+.action-btn {
+    flex: 2;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    background-color: #d1d5db;
+    pointer-events: none; /* 未全勾前無法點擊 */
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.action-btn.active {
+    background-color: var(--success-color);
+    pointer-events: auto;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.reset-btn {
+    flex: 1;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    border: 2px solid var(--danger-color);
+    border-radius: 12px;
+    color: var(--danger-color);
+    background-color: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.reset-btn:active {
+    background-color: #fef2f2;
+    transform: scale(0.95);
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
