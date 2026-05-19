@@ -1,3 +1,6 @@
+const GAS_WEB_API_URL =
+  "https://script.google.com/macros/s/AKfycbzceEEfN0_APsFTN746vyicTuidukSul4TKb7Sdt7VdZ8dwbyiH7M40AjqmLVXTqM3h/exec";
+
 // 1. 定義兩個分頁的點檢內容數據 (Data)
 const dataData = {
   prePrint: [
@@ -14,10 +17,7 @@ const dataData = {
   ],
 };
 
-// 紀錄目前所在的頁籤，預設是印前點檢
 let currentTab = "prePrint";
-
-// 紀錄每個項目的勾選狀態 (State)
 let checkedState = {
   p1: false,
   p2: false,
@@ -29,94 +29,124 @@ let checkedState = {
   r4: false,
 };
 
-// 2. 渲染清單的函式 (Render)
 function renderList() {
   const container = document.getElementById("checklistContainer");
-  if (!container) return; // 安全檢查
-
-  container.innerHTML = ""; // 清空舊畫面
+  if (!container) return;
+  container.innerHTML = "";
 
   const currentItems = dataData[currentTab];
-
   currentItems.forEach((item) => {
     const isChecked = checkedState[item.id];
-
-    // 建立點檢項目的 DOM
     const itemDiv = document.createElement("div");
     itemDiv.className = `check-item ${isChecked ? "checked" : ""}`;
-
-    // 點擊整個區塊就會切換狀態
     itemDiv.onclick = () => toggleCheck(item.id);
 
-    // 注意：把 checkbox 加上 pointer-events: none (由 CSS 控制) 或單純作為視覺呈現，避免重複觸發
     itemDiv.innerHTML = `
             <input type="checkbox" ${isChecked ? "checked" : ""} id="cb-${item.id}" style="pointer-events: none;">
             <span>${item.text}</span>
         `;
-
     container.appendChild(itemDiv);
   });
 
-  // 渲染完清單後，緊接著檢查底部狀態列
   checkLockStatus();
 }
 
-// 3. 切換項目勾選狀態 (Toggle)
+// 👤 新增：動態取得畫面上選擇的操作員姓名
+function getSelectedOperator() {
+  const selectEl = document.getElementById("operatorSelect");
+  return selectEl ? selectEl.value : "未知操作員";
+}
+
+// 🛠️ 2. 修改此處：切換項目勾選狀態並同步到雲端 Excel（對應新版後端）
 function toggleCheck(id) {
+  // 先切換本地端狀態，讓操作者網頁畫面立刻勾選（不卡頓）
   checkedState[id] = !checkedState[id];
   renderList();
+
+  // 找出剛剛點擊的那個項目的詳細文字
+  const currentItems = dataData[currentTab];
+  const clickedItem = currentItems.find((item) => item.id === id);
+
+  // 計算當前分頁是否已經全部勾選完成
+  const isAllChecked = currentItems.every(
+    (item) => checkedState[item.id] === true,
+  );
+
+  // 📦 打包準備送去雲端的資料（完全對應新版 GAS 的欄位名稱）
+  const logData = {
+    operator: getSelectedOperator(), // 👈 補上操作員
+    tab: currentTab,
+    id: id,
+    text: clickedItem ? clickedItem.text : "",
+    status: checkedState[id] ? "✅ 已勾選" : "❌ 取消勾選", // 👈 改成文字，直接呈現給 Excel
+    isAllChecked: isAllChecked,
+  };
+
+  // 發送給雲端
+  sendToCloud(logData);
 }
 
-// 4. 切換頁籤 (Switch Tab)
-function switchTab(tabName) {
-  currentTab = tabName;
-
-  // 更新按鈕樣式
-  const buttons = document.querySelectorAll(".tab-btn");
-  if (buttons.length >= 2) {
-    buttons[0].classList.toggle("active", tabName === "prePrint");
-    buttons[1].classList.toggle("active", tabName === "raiseHead");
-  }
-
-  renderList();
-}
-
-// 5. 一鍵重置功能 (Reset)
+// 🛠️ 3. 修改此處：點擊重置時，也同步發送一筆「重置紀錄」到雲端 Excel
 function resetChecklist() {
   // 將目前頁籤的所有項目重置為 false
   dataData[currentTab].forEach((item) => {
     checkedState[item.id] = false;
   });
   renderList();
+
+  // 📦 打包重置的事件資料
+  const logData = {
+    operator: getSelectedOperator(), // 👈 補上操作員
+    tab: currentTab,
+    id: "RESET", // 👈 明確定義 ID 為重置
+    text: "使用者點擊了一鍵重置按鈕",
+    status: "🔄 一鍵重置", // 👈 變更狀態寫明重置
+    isAllChecked: false,
+  };
+
+  // 發送給雲端
+  sendToCloud(logData);
 }
 
-// 6. 檢查是否全部勾選以解鎖下一步 (Lock Logic)
+// 🌐 新增：統一呼叫 Fetch 發送資料的函式
+function sendToCloud(data) {
+  fetch(GAS_WEB_API_URL, {
+    method: "POST",
+    mode: "cors",
+    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "text/plain",
+    },
+  })
+    .then((res) => res.json())
+    .then((resData) => console.log("☁️ 雲端同步成功:", resData))
+    .catch((err) => console.error("❌ 雲端同步失敗:", err));
+}
+
+function switchTab(tabName) {
+  currentTab = tabName;
+  const buttons = document.querySelectorAll(".tab-btn");
+  if (buttons.length >= 2) {
+    buttons[0].classList.toggle("active", tabName === "prePrint");
+    buttons[1].classList.toggle("active", tabName === "raiseHead");
+  }
+  renderList();
+}
+
 function checkLockStatus() {
   const currentItems = dataData[currentTab];
-  // 檢查目前頁籤是否「每一個」項目都為 true
   const isAllChecked = currentItems.every(
     (item) => checkedState[item.id] === true,
   );
-
   const statusBar = document.getElementById("statusBar");
-  const nextBtn = document.getElementById("nextActionBtn"); // ⚠️ HTML 目前沒有這個元素
 
   if (statusBar) {
     if (isAllChecked) {
-      statusBar.textContent = "✅ 點檢完成！";
+      statusBar.textContent = "✅ 點檢完成！流程解鎖";
       statusBar.className = "status-bar complete";
     } else {
       statusBar.textContent = "⚠️ 請確認上方所有項目皆已點檢";
       statusBar.className = "status-bar";
-    }
-  }
-
-  // 🛠️ 加上防呆安全檢查：只有當 HTML 裡有 nextActionBtn 時才去改它的 className
-  if (nextBtn) {
-    if (isAllChecked) {
-      nextBtn.className = "action-btn active";
-    } else {
-      nextBtn.className = "action-btn";
     }
   }
 }
