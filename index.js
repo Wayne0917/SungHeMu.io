@@ -1,6 +1,6 @@
 // ⚠️ 記得把下面的網址換成你在 GAS「重新部署」後產生的最新網址（/exec 結尾）
 const GAS_WEB_API_URL =
-  "https://script.google.com/macros/s/AKfycbySkBTGmLarfzucKgK3rqUfP6a4kU60PG2B4CXMdgGfJBDotAbuTCpaqdnXO3wr421k/exec";
+  "https://script.google.com/macros/s/AKfycbwVGD9d5m6bVXA5MD-ofszVcIy2hZAQQ5l_thyH0wK-QVsQNOe0uui004jpl8B7RmqB/exec";
 
 // 🔒 安全驗證金鑰：必須與 Google Apps Script 裡設定的完全一致
 const MY_SECRET_KEY = "SungHeMu_Secret_2026_Secure";
