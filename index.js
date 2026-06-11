@@ -2,7 +2,7 @@
 const GAS_WEB_API_URL =
   "https://script.google.com/macros/s/AKfycbySkBTGmLarfzucKgK3rqUfP6a4kU60PG2B4CXMdgGfJBDotAbuTCpaqdnXO3wr421k/exec";
 
-// 🔒 安全驗證金鑰：必須跟 Google Apps Script 裡設定的完全一致
+// 🔒 安全驗證金鑰：必須與 Google Apps Script 裡設定的完全一致
 const MY_SECRET_KEY = "SungHeMu_Secret_2026_Secure";
 
 // 1. 定義兩個分頁的點檢內容數據 (Data)
@@ -55,13 +55,13 @@ function renderList() {
   checkLockStatus();
 }
 
-// 👤 新增：動態取得畫面上選擇的操作員姓名
+// 👤 動態取得畫面上選擇的操作員姓名
 function getSelectedOperator() {
   const selectEl = document.getElementById("operatorSelect");
   return selectEl ? selectEl.value : "未知操作員";
 }
 
-// 🛠️ 2. 修改此處：切換項目勾選狀態並同步到雲端 Excel（對應新版後端）
+// 🛠️ 2. 修改此處：切換項目勾選狀態並同步到雲端 Excel
 function toggleCheck(id) {
   // 先切換本地端狀態，讓操作者網頁畫面立刻勾選（不卡頓）
   checkedState[id] = !checkedState[id];
@@ -91,7 +91,7 @@ function toggleCheck(id) {
   sendToCloud(logData);
 }
 
-// 🛠️ 3. 修改此處：點擊重置時，也同步發送一筆「重置紀錄」到雲端 Excel
+// 🛠️ 3. 點擊重置時，也同步發送一筆「重置紀錄」到雲端 Excel
 function resetChecklist() {
   // 將目前頁籤的所有項目重置為 false
   dataData[currentTab].forEach((item) => {
@@ -114,35 +114,35 @@ function resetChecklist() {
   sendToCloud(logData);
 }
 
-// 🌐 統一呼叫 Fetch 發送資料的函式（正規跨域修復版）
+// 🌐 統一呼叫 Fetch 發送資料的函式（直通免預檢優化版）
 function sendToCloud(data) {
   fetch(GAS_WEB_API_URL, {
     method: "POST",
-    mode: "cors", // 必須開啟 cors 模式
+    mode: "cors", // 保持跨域模式
     headers: {
-      "Content-Type": "application/json", 
+      // 💡 核心優化：改為純文字通訊，強迫瀏覽器判定為簡單請求，跳過討人厭的 OPTIONS 預檢
+      "Content-Type": "text/plain;charset=utf-8", 
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify(data), // 資料依然打包成乾淨的 JSON 字串
   })
     .then((res) => {
-      // 💡 提示：GAS 成功處理完後，有時會進行 302 網址重新導向
-      // 瀏覽器會自動追蹤導向，若 res.ok 為 true 則正常解析 JSON
+      // 如果順利拿到正常的 JSON 回應就直接解析
       return res.json();
     })
     .then((resData) => {
       if (resData.result === "success") {
-        console.log("☁️ 雲端同步成功:", resData);
+        console.log("☁️ 雲端同步成功！資料已平安寫入 Excel。");
       } else {
-        console.error("❌ 雲端同步失敗（後台拒絕）:", resData.message);
+        console.error("❌ 雲端同步被後台拒絕：", resData.message);
       }
     })
     .catch((err) => {
-      /* 💡 經驗談：Google Apps Script 的 POST 請求成功寫入後，
-        有時候因為伺服器重導向機制（Redirect），會導致前端 JavaScript 的 fetch 拋出 TypeError: Failed to fetch。
-        但「實際上資料已經寫入 Excel 了」！
-        如果控制台依然看到 catch 錯誤，請直接去你的 Google Sheet 看一眼，確認資料有沒有進去。
+      /* 💡 寬容處理機制：
+         因為 Google Apps Script 執行完後會有一個底層重新導向（302 Redirect）的動作，
+         某些瀏覽器追蹤轉址時可能會因為沒抓到 CORS 標頭而誤跳進 catch 區塊（並顯示 Failed to fetch）。
+         此處做防呆提示，基本上只要你前、後端代碼對齊、金鑰正確，看到這行時去重新整理 Google Sheet，資料就已經進去了！
       */
-      console.log("⏳ 網路回傳狀態處理中，請至 Google 試算表確認是否已成功寫入。");
+      console.log("⏳ 點檢同步請求已送出，請刷新 Google 試算表確認資料是否已成功寫入！");
     });
 }
 
