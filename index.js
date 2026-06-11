@@ -1,5 +1,5 @@
 const GAS_WEB_API_URL =
-  "https://script.google.com/macros/s/AKfycbzceEEfN0_APsFTN746vyicTuidukSul4TKb7Sdt7VdZ8dwbyiH7M40AjqmLVXTqM3h/exec";
+  "https://script.google.com/macros/s/AKfycbySkBTGmLarfzucKgK3rqUfP6a4kU60PG2B4CXMdgGfJBDotAbuTCpaqdnXO3wr421k/exec";
 
 // 1. 定義兩個分頁的點檢內容數據 (Data)
 const dataData = {
