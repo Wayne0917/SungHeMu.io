@@ -114,34 +114,26 @@ function resetChecklist() {
   sendToCloud(logData);
 }
 
-// 🌐 統一呼叫 Fetch 發送資料的函式
+// 🌐 統一呼叫 Fetch 發送資料的函式（終極保證通行版）
 function sendToCloud(data) {
   fetch(GAS_WEB_API_URL, {
     method: "POST",
-    mode: "cors", // 確保開啟跨域模式
-    /* 💡 關鍵優化：將 Content-Type 改回 text/plain (或 text/plain;charset=utf-8)
-       這樣瀏覽器會判定這是一個「簡單請求 (Simple Request)」，
-       就不會發送會被 Google 拒絕的 OPTIONS 預檢請求，直接發送 POST！
-    */
+    mode: "no-cors", // 💡 關鍵：強制開啟 no-cors 模式，徹底免除瀏覽器 Preflight 預檢檢查！
     headers: {
-      "Content-Type": "text/plain;charset=utf-8", 
+      "Content-Type": "application/x-www-form-urlencoded", // 使用最傳統的表單格式
     },
-    body: JSON.stringify(data), // 資料依然是標準的 JSON 字串
+    body: JSON.stringify(data), // 資料依然打包成 JSON 字串送過去
   })
-    .then((res) => {
-      // 注意：GAS 有時重導向不會回傳標準的 res.ok，我們直接轉成 JSON 解析
-      return res.json();
-    })
-    .then((resData) => {
-      if (resData.result === "success") {
-        console.log("☁️ 雲端同步成功:", resData);
-      } else {
-        console.error("❌ 雲端同步失敗（後台拒絕）:", resData.message);
-      }
+    .then(() => {
+      /* ⚠️ 注意事項：
+         在 'no-cors' 模式下，JavaScript 為了隱私安全，無法讀取遠端回傳的狀態碼或內容。
+         所以 `res.json()` 會失效（會噴 opaque 回應錯誤）。
+         因此，只要 fetch 順利執行完畢沒有噴 catch 錯誤，就代表資料已經「成功發射出去」了！
+      */
+      console.log("☁️ 點檢資料已成功發送（請至 Google 試算表確認是否寫入成功）");
     })
     .catch((err) => {
-      // 這裡做個防呆，因為 GAS 成功時有時候會因為網址跳轉(302)導致前端抓到噴錯，但後台其實已經成功寫入了
-      console.warn("⚠️ 網路回傳判定異常，請檢查 Google 試算表是否其實有成功寫入。錯誤資訊:", err);
+      console.error("❌ 雲端網路傳輸嚴重失敗:", err);
     });
 }
 
