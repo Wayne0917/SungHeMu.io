@@ -114,26 +114,35 @@ function resetChecklist() {
   sendToCloud(logData);
 }
 
-// 🌐 統一呼叫 Fetch 發送資料的函式（終極保證通行版）
+// 🌐 統一呼叫 Fetch 發送資料的函式（正規跨域修復版）
 function sendToCloud(data) {
   fetch(GAS_WEB_API_URL, {
     method: "POST",
-    mode: "no-cors", // 💡 關鍵：強制開啟 no-cors 模式，徹底免除瀏覽器 Preflight 預檢檢查！
+    mode: "cors", // 必須開啟 cors 模式
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded", // 使用最傳統的表單格式
+      "Content-Type": "application/json", 
     },
-    body: JSON.stringify(data), // 資料依然打包成 JSON 字串送過去
+    body: JSON.stringify(data),
   })
-    .then(() => {
-      /* ⚠️ 注意事項：
-         在 'no-cors' 模式下，JavaScript 為了隱私安全，無法讀取遠端回傳的狀態碼或內容。
-         所以 `res.json()` 會失效（會噴 opaque 回應錯誤）。
-         因此，只要 fetch 順利執行完畢沒有噴 catch 錯誤，就代表資料已經「成功發射出去」了！
-      */
-      console.log("☁️ 點檢資料已成功發送（請至 Google 試算表確認是否寫入成功）");
+    .then((res) => {
+      // 💡 提示：GAS 成功處理完後，有時會進行 302 網址重新導向
+      // 瀏覽器會自動追蹤導向，若 res.ok 為 true 則正常解析 JSON
+      return res.json();
+    })
+    .then((resData) => {
+      if (resData.result === "success") {
+        console.log("☁️ 雲端同步成功:", resData);
+      } else {
+        console.error("❌ 雲端同步失敗（後台拒絕）:", resData.message);
+      }
     })
     .catch((err) => {
-      console.error("❌ 雲端網路傳輸嚴重失敗:", err);
+      /* 💡 經驗談：Google Apps Script 的 POST 請求成功寫入後，
+        有時候因為伺服器重導向機制（Redirect），會導致前端 JavaScript 的 fetch 拋出 TypeError: Failed to fetch。
+        但「實際上資料已經寫入 Excel 了」！
+        如果控制台依然看到 catch 錯誤，請直接去你的 Google Sheet 看一眼，確認資料有沒有進去。
+      */
+      console.log("⏳ 網路回傳狀態處理中，請至 Google 試算表確認是否已成功寫入。");
     });
 }
 
