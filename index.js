@@ -1,5 +1,9 @@
+// ⚠️ 記得把下面的網址換成你在 GAS「重新部署」後產生的最新網址（/exec 結尾）
 const GAS_WEB_API_URL =
   "https://script.google.com/macros/s/AKfycbySkBTGmLarfzucKgK3rqUfP6a4kU60PG2B4CXMdgGfJBDotAbuTCpaqdnXO3wr421k/exec";
+
+// 🔒 安全驗證金鑰：必須跟 Google Apps Script 裡設定的完全一致
+const MY_SECRET_KEY = "SungHeMu_Secret_2026_Secure";
 
 // 1. 定義兩個分頁的點檢內容數據 (Data)
 const dataData = {
@@ -74,6 +78,7 @@ function toggleCheck(id) {
 
   // 📦 打包準備送去雲端的資料（完全對應新版 GAS 的欄位名稱）
   const logData = {
+    apiKey: MY_SECRET_KEY,           // 👈 🔑 注入安全驗證暗號
     operator: getSelectedOperator(), // 👈 補上操作員
     tab: currentTab,
     id: id,
@@ -96,11 +101,12 @@ function resetChecklist() {
 
   // 📦 打包重置的事件資料
   const logData = {
+    apiKey: MY_SECRET_KEY,           // 👈 🔑 注入安全驗證暗號
     operator: getSelectedOperator(), // 👈 補上操作員
     tab: currentTab,
-    id: "RESET", // 👈 明確定義 ID 為重置
+    id: "RESET",                     // 👈 明確定義 ID 為重置
     text: "使用者點擊了一鍵重置按鈕",
-    status: "🔄 一鍵重置", // 👈 變更狀態寫明重置
+    status: "🔄 一鍵重置",            // 👈 變更狀態寫明重置
     isAllChecked: false,
   };
 
@@ -115,12 +121,21 @@ function sendToCloud(data) {
     mode: "cors",
     body: JSON.stringify(data),
     headers: {
-      "Content-Type": "text/plain",
+      "Content-Type": "application/json", // 💡 改為標準 JSON 格式傳輸
     },
   })
-    .then((res) => res.json())
-    .then((resData) => console.log("☁️ 雲端同步成功:", resData))
-    .catch((err) => console.error("❌ 雲端同步失敗:", err));
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP 錯誤! 狀態碼: ${res.status}`);
+      return res.json();
+    })
+    .then((resData) => {
+      if (resData.result === "success") {
+        console.log("☁️ 雲端同步成功:", resData);
+      } else {
+        console.error("❌ 雲端同步失敗（後台拒絕）:", resData.message);
+      }
+    })
+    .catch((err) => console.error("❌ 雲端網絡同步失敗:", err));
 }
 
 function switchTab(tabName) {
