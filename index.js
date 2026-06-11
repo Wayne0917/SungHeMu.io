@@ -114,18 +114,22 @@ function resetChecklist() {
   sendToCloud(logData);
 }
 
-// 🌐 新增：統一呼叫 Fetch 發送資料的函式
+// 🌐 統一呼叫 Fetch 發送資料的函式
 function sendToCloud(data) {
   fetch(GAS_WEB_API_URL, {
     method: "POST",
-    mode: "cors",
-    body: JSON.stringify(data),
+    mode: "cors", // 確保開啟跨域模式
+    /* 💡 關鍵優化：將 Content-Type 改回 text/plain (或 text/plain;charset=utf-8)
+       這樣瀏覽器會判定這是一個「簡單請求 (Simple Request)」，
+       就不會發送會被 Google 拒絕的 OPTIONS 預檢請求，直接發送 POST！
+    */
     headers: {
-      "Content-Type": "application/json", // 💡 改為標準 JSON 格式傳輸
+      "Content-Type": "text/plain;charset=utf-8", 
     },
+    body: JSON.stringify(data), // 資料依然是標準的 JSON 字串
   })
     .then((res) => {
-      if (!res.ok) throw new Error(`HTTP 錯誤! 狀態碼: ${res.status}`);
+      // 注意：GAS 有時重導向不會回傳標準的 res.ok，我們直接轉成 JSON 解析
       return res.json();
     })
     .then((resData) => {
@@ -135,7 +139,10 @@ function sendToCloud(data) {
         console.error("❌ 雲端同步失敗（後台拒絕）:", resData.message);
       }
     })
-    .catch((err) => console.error("❌ 雲端網絡同步失敗:", err));
+    .catch((err) => {
+      // 這裡做個防呆，因為 GAS 成功時有時候會因為網址跳轉(302)導致前端抓到噴錯，但後台其實已經成功寫入了
+      console.warn("⚠️ 網路回傳判定異常，請檢查 Google 試算表是否其實有成功寫入。錯誤資訊:", err);
+    });
 }
 
 function switchTab(tabName) {
