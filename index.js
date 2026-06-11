@@ -5,7 +5,7 @@ const GAS_WEB_API_URL =
 // 🔒 安全驗證金鑰：必須與 Google Apps Script 裡設定的完全一致
 const MY_SECRET_KEY = "SungHeMu_Secret_2026_Secure";
 
-// 1. 定義兩個分頁的點檢內容數據 (Data)
+// 1. 定義兩個分頁的點檢內容數據 (Data)s
 const dataData = {
   prePrint: [
     { id: "p1", text: "檢查白墨是否有沉澱並均勻搖晃" },
@@ -61,7 +61,7 @@ function getSelectedOperator() {
   return selectEl ? selectEl.value : "未知操作員";
 }
 
-// 🛠️ 2. 修改此處：切換項目勾選狀態並同步到雲端 Excel（附加 action: "write"）
+// 🛠️ 2. 修改此處：切換項目勾選狀態並同步到雲端 Excel
 function toggleCheck(id) {
   // 先切換本地端狀態，讓操作者網頁畫面立刻勾選（不卡頓）
   checkedState[id] = !checkedState[id];
@@ -78,7 +78,6 @@ function toggleCheck(id) {
 
   // 📦 打包準備送去雲端的資料（完全對應新版 GAS 的欄位名稱）
   const logData = {
-    action: "write",                 // 👈 🟢 核心變更：指定動作為寫入新紀錄
     apiKey: MY_SECRET_KEY,           // 👈 🔑 注入安全驗證暗號
     operator: getSelectedOperator(), // 👈 補上操作員
     tab: currentTab,
@@ -92,7 +91,7 @@ function toggleCheck(id) {
   sendToCloud(logData);
 }
 
-// 🛠️ 3. 修改此處：一鍵重置時，直接發出指令抹除雲端最後一列資料（不留修改痕跡）
+// 🛠️ 3. 點擊重置時，也同步發送一筆「重置紀錄」到雲端 Excel
 function resetChecklist() {
   // 將目前頁籤的所有項目重置為 false
   dataData[currentTab].forEach((item) => {
@@ -100,10 +99,15 @@ function resetChecklist() {
   });
   renderList();
 
-  // 📦 打包重置的事件資料（改為發送 action: "delete"）
+  // 📦 打包重置的事件資料
   const logData = {
-    action: "delete",                // 👈 🔴 核心變更：指定動作為刪除雲端最後一列資料
-    apiKey: MY_SECRET_KEY            // 👈 🔑 注入安全驗證暗號
+    apiKey: MY_SECRET_KEY,           // 👈 🔑 注入安全驗證暗號
+    operator: getSelectedOperator(), // 👈 補上操作員
+    tab: currentTab,
+    id: "RESET",                     // 👈 明確定義 ID 為重置
+    text: "使用者點擊了一鍵重置按鈕",
+    status: "🔄 一鍵重置",            // 👈 變更狀態寫明重置
+    isAllChecked: false,
   };
 
   // 發送給雲端
@@ -127,7 +131,7 @@ function sendToCloud(data) {
     })
     .then((resData) => {
       if (resData.result === "success") {
-        console.log("☁️ 雲端同步動作成功！後端回應：", resData.message);
+        console.log("☁️ 雲端同步成功！資料已平安寫入 Excel。");
       } else {
         console.error("❌ 雲端同步被後台拒絕：", resData.message);
       }
@@ -136,9 +140,9 @@ function sendToCloud(data) {
       /* 💡 寬容處理機制：
          因為 Google Apps Script 執行完後會有一個底層重新導向（302 Redirect）的動作，
          某些瀏覽器追蹤轉址時可能會因為沒抓到 CORS 標頭而誤跳進 catch 區塊（並顯示 Failed to fetch）。
-         此處做防呆提示，基本上只要你前、後端代碼對齊、金鑰正確，看到這行時去重新整理 Google Sheet，資料就已經同步了！
+         此處做防呆提示，基本上只要你前、後端代碼對齊、金鑰正確，看到這行時去重新整理 Google Sheet，資料就已經進去了！
       */
-      console.log("⏳ 點檢同步請求已送出，請刷新 Google 試算表確認雲端狀態是否已更新！");
+      console.log("⏳ 點檢同步請求已送出，請刷新 Google 試算表確認資料是否已成功寫入！");
     });
 }
 
